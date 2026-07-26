@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radio Calico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <span>Radio</span>
+    <img src="/RadioCalicoLogoTM.png" class="header-logo" alt="Radio Calico logo" />
+    <span>Calico</span>
+  </div>
+</header>
+
+<!-- Elements kept for JS but not rendered -->
+<div class="js-hidden">
+  <div id="dot"></div>
+  <span id="status-text"></span>
+  <div id="waveform"></div>
+  <span id="np-pip"></span>
+  <span id="vol-label"></span>
+</div>
+
+<main class="main-content">
+  <!-- Left: large album art -->
+  <div class="art-col" id="art">
+    <div id="np-cover-wrap">
+      <img id="np-cover" class="loading" alt="Album art" />
+    </div>
+  </div>
+
+  <!-- Right: song info + controls -->
+  <div class="info-col">
+    <div id="np-artist"></div>
+    <div id="np-title"></div>
+    <div id="np-meta"></div>
+
+    <div id="np-quality" style="display:none">
+      <p class="quality-line">Source quality: <span id="np-quality-text"></span></p>
+      <p class="quality-line">Stream quality: 48kHz FLAC / HLS Lossless</p>
+    </div>
+
+    <div id="np-rating" style="display:none">
+      <span class="rate-label">Rate this track:</span>
+      <button class="rate-btn" id="rate-up" aria-label="Thumbs up" disabled>
+        <span>👍</span><span class="rate-count" id="count-up"></span>
+      </button>
+      <button class="rate-btn" id="rate-down" aria-label="Thumbs down" disabled>
+        <span>👎</span><span class="rate-count" id="count-down"></span>
+      </button>
+      <span class="rating-notice" id="rating-notice"></span>
+    </div>
+
+    <div class="player-bar">
+      <button class="btn-play" id="btn-play" aria-label="Play">
+        <svg id="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></svg>
+      </button>
+      <span class="time-display" id="time-display">Live</span>
+      <span class="vol-icon-bar">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+      </span>
+      <input type="range" id="volume" min="0" max="100" value="80" aria-label="Volume" />
+    </div>
+  </div>
+</main>
+
+<footer class="prev-section">
+  <div class="prev-inner">
+    <div class="prev-heading">Previous tracks:</div>
+    <div class="track-list" id="track-list"></div>
+  </div>
+</footer>
+
+<script src="/script.js"></script>
+</body>
+</html>
