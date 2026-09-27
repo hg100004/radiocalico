@@ -49,7 +49,8 @@ python -m pytest
 - `tests/logic.test.js` — Vitest, unit-tests the pure helpers in `logic.js` (node environment, via `require`).
 - `tests/rating-ui.test.js` — Vitest + jsdom (`// @vitest-environment jsdom`), loads the real `index.html` body markup and imports `logic.js`/`script.js` against it to test the rating UI end-to-end: initial vote counts render from a mocked `/api/ratings`, clicking a rate button posts to `/api/vote` and updates counts/disabled state/notice text, and polling in new metadata (via `vi.useFakeTimers` + `vi.advanceTimersByTimeAsync`) resets the rating UI for the new song. `fetch` is fully mocked; no real network calls.
   - Note: `logic.js` and `script.js` are loaded as ES modules under Vitest, so `logic.js`'s functions don't become globals automatically the way they do via real `<script>` tags in the browser — the test does `Object.assign(globalThis, require('../logic.js'))` before importing `script.js` to bridge this.
-- Player controls (HLS init, play/pause) and metadata rendering beyond the rating UI are still not covered.
+- `tests/player-controls.test.js` — Vitest + jsdom, same markup/import setup, with `Hls` stubbed (a `FakeHls` class tracking instances) and the global `Audio` constructor stubbed to capture the real jsdom `HTMLAudioElement` instance `script.js` creates internally (`capturedAudio`), since it isn't otherwise exposed. Covers: waveform bar generation, play/pause icon and status-text toggling on click, HLS init/destroy, audio events (`playing`/`waiting`/`stalled`/`error`) driving status text and the elapsed-time display (via `vi.advanceTimersByTimeAsync`), and the volume slider.
+- Metadata rendering beyond the rating UI (cover art, previous-tracks list) is still not covered.
 ```bash
 npm install
 npm test
