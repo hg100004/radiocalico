@@ -166,10 +166,6 @@ function renderMetadata(d) {
     </div>`).join('');
 }
 
-function esc(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 async function fetchMeta() {
   try {
     const r = await fetch(META_URL + '?_=' + Date.now());
@@ -201,8 +197,6 @@ const USER_ID = getUserId();
 
 let currentSongKey  = null;
 let ratingPollTimer = null;
-
-function makeSongKey(artist, title) { return (artist || '') + '|||' + (title || ''); }
 
 function applyRatingData(data) {
   countUp.textContent   = data.up;
@@ -256,12 +250,6 @@ rateDown.addEventListener('click', () => submitVote('down'));
 const timeDisplay = document.getElementById('time-display');
 let sessionStart = null;
 let elapsedTimer = null;
-
-function formatElapsed(ms) {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return m + ':' + String(s % 60).padStart(2, '0');
-}
 
 audio.addEventListener('playing', () => {
   if (!sessionStart) sessionStart = Date.now();
