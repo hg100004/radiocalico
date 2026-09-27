@@ -41,12 +41,32 @@ Open [http://localhost:5000](http://localhost:5000) in your browser.
 
 ```
 radiocalico/
-├── app.py          # Flask server — API routes and static file serving
-├── index.html      # Single-page markup
-├── style.css       # All styling (CSS custom properties, layout, animations)
-├── script.js       # All client-side logic (streaming, metadata polling, ratings)
+├── app.py                # Flask server — API routes and static file serving
+├── index.html            # Single-page markup
+├── style.css             # All styling (CSS custom properties, layout, animations)
+├── logic.js              # Pure, DOM-free helpers (makeSongKey, esc, formatElapsed) — unit-tested
+├── script.js             # All client-side logic (streaming, metadata polling, ratings)
 ├── requirements.txt
-└── ratings.db      # SQLite database (auto-created on first run)
+├── requirements-dev.txt   # + pytest, for running the backend test suite
+├── package.json           # Vitest + jsdom, for running the frontend test suite
+├── tests/
+│   ├── test_app.py             # pytest — ratings/vote API endpoints
+│   ├── logic.test.js           # Vitest — pure helpers in logic.js
+│   ├── rating-ui.test.js       # Vitest + jsdom — rating UI end-to-end
+│   └── player-controls.test.js # Vitest + jsdom — play/pause, HLS, volume, audio events
+└── ratings.db            # SQLite database (auto-created on first run)
+```
+
+## Testing
+
+```bash
+# Backend
+pip install -r requirements-dev.txt
+python -m pytest
+
+# Frontend
+npm install
+npm test
 ```
 
 ## API
