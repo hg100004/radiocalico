@@ -21,10 +21,11 @@ Radio Calico is a single-page internet radio player. There is no build step — 
 - `POST /api/vote` — records a thumbs up/down; returns 409 if the user already voted for this song
 - SQLite (`ratings.db`): single `votes` table with `(song_key, user_id)` as the primary key — one vote per user per song, never changed once cast
 
-**Frontend** — no framework, no build tooling. Three files:
-- `index.html` — markup only; links `style.css` and `script.js`
+**Frontend** — no framework, no build tooling. Four files:
+- `index.html` — markup only; links `style.css`, `logic.js`, and `script.js` (loaded in that order)
 - `style.css` — all styling, including CSS custom properties (brand colors), layout, and animations
-- `script.js` — all client-side logic:
+- `logic.js` — pure helper functions with no DOM dependency, extracted so they're unit-testable: `makeSongKey`, `esc`, `formatElapsed`. Dual-mode (plain global for the browser `<script>` tag, `module.exports` for Node/Vitest)
+- `script.js` — all client-side logic, DOM-coupled (grabs elements via `getElementById` at top level on load):
   - HLS stream via [hls.js](https://github.com/video-dev/hls.js/) loaded from CDN; falls back to native HLS on Safari
   - Polls `metadatav2.json` on CloudFront every 15 s for now-playing data (artist, title, album, bit depth, previous tracks)
   - Fetches `cover.jpg` from CloudFront on each song change (cache-busted by song key)
@@ -35,6 +36,24 @@ Radio Calico is a single-page internet radio player. There is no build step — 
 - Stream: `https://d3d4yli4hf5bmh.cloudfront.net/hls/live.m3u8`
 - Metadata: `https://d3d4yli4hf5bmh.cloudfront.net/metadatav2.json`
 - Cover art: `https://d3d4yli4hf5bmh.cloudfront.net/cover.jpg`
+
+## Testing
+
+**Backend** (`tests/test_app.py`) — pytest against Flask's test client, with `app.DB` monkeypatched to a temp SQLite file per test (never touches real `ratings.db`). Covers the ratings/vote endpoints: validation, vote recording, multi-user accumulation, duplicate-vote 409 behavior, per-song isolation, CORS headers.
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+**Frontend**:
+- `tests/logic.test.js` — Vitest, unit-tests the pure helpers in `logic.js` (node environment, via `require`).
+- `tests/rating-ui.test.js` — Vitest + jsdom (`// @vitest-environment jsdom`), loads the real `index.html` body markup and imports `logic.js`/`script.js` against it to test the rating UI end-to-end: initial vote counts render from a mocked `/api/ratings`, clicking a rate button posts to `/api/vote` and updates counts/disabled state/notice text, and polling in new metadata (via `vi.useFakeTimers` + `vi.advanceTimersByTimeAsync`) resets the rating UI for the new song. `fetch` is fully mocked; no real network calls.
+  - Note: `logic.js` and `script.js` are loaded as ES modules under Vitest, so `logic.js`'s functions don't become globals automatically the way they do via real `<script>` tags in the browser — the test does `Object.assign(globalThis, require('../logic.js'))` before importing `script.js` to bridge this.
+- Player controls (HLS init, play/pause) and metadata rendering beyond the rating UI are still not covered.
+```bash
+npm install
+npm test
+```
 
 ## Style Guide
 
