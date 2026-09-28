@@ -9,6 +9,8 @@ pip install -r requirements.txt   # Flask, gunicorn, psycopg2-binary
 python app.py                     # starts on http://localhost:5000, SQLite by default
 ```
 
+A `Makefile` wraps the common commands: `make install`/`make dev` for the above, `make prod`/`make prod-down` for the docker-compose production stack, `make test`/`make test-backend`/`make test-backend-pg`/`make test-frontend` for the test suites. `make` itself isn't guaranteed to be installed on every dev machine (confirmed absent in at least one sandbox this was developed in) — fall back to the underlying commands (documented throughout this file and in README.md) if `make` isn't available.
+
 The Flask server is typically already running. Restart it in the background if a restart is needed; never start it in the foreground.
 
 ## Architecture

@@ -32,16 +32,38 @@ A single-page internet radio player built with Flask and vanilla JavaScript. Str
 ```bash
 git clone https://github.com/hg100004/radiocalico.git
 cd radiocalico
-pip install -r requirements.txt
-python app.py
+make install
+make dev
 ```
 
 Open [http://localhost:5000](http://localhost:5000) in your browser. This runs against SQLite (`ratings.db`) by default; set `DATABASE_URL` to a `postgresql://...` URL to use PostgreSQL instead.
+
+## Make Targets
+
+```bash
+make install          # Python runtime deps (SQLite dev mode)
+make install-dev       # + pytest, npm install (vitest/jsdom) -- needed for `make test`
+
+make dev               # Flask dev server against SQLite -- http://localhost:5000
+
+make prod              # Build and run nginx + gunicorn + postgres via docker compose
+make prod-logs         # Tail logs from the running production stack
+make prod-down         # Stop the production stack
+                        # -> http://localhost:8080
+
+make test              # Backend (SQLite) + frontend suites
+make test-backend      # pytest against SQLite only
+make test-backend-pg   # Starts postgres via docker compose, runs tests/test_app_postgres.py against it
+make test-frontend     # Vitest only
+
+make clean             # Remove Python/pytest caches
+```
 
 ## Project Structure
 
 ```
 radiocalico/
+├── Makefile                # make install / dev / prod / test -- see Make Targets below
 ├── app.py                # Flask server — API routes; SQLite/PostgreSQL selected by DATABASE_URL
 ├── wsgi.py                # Production entrypoint for gunicorn (calls init_db() on import)
 ├── index.html            # Single-page markup
