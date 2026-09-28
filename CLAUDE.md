@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Running the app
 
 ```bash
-pip install -r requirements.txt   # installs Flask only
-python app.py                     # starts on http://localhost:5000
+pip install -r requirements.txt   # Flask, gunicorn, psycopg2-binary
+python app.py                     # starts on http://localhost:5000, SQLite by default
 ```
 
 The Flask server is typically already running. Restart it in the background if a restart is needed; never start it in the foreground.
@@ -16,10 +16,11 @@ The Flask server is typically already running. Restart it in the background if a
 Radio Calico is a single-page internet radio player. There is no build step — the entire frontend lives in one `index.html` with all CSS and JS inline.
 
 **Backend (`app.py`)** — Flask, port 5000:
-- Serves `index.html` and whitelisted static extensions (`.png`, `.jpg`, `.css`, `.js`, etc.) from the project root
+- Serves `index.html` and whitelisted static extensions (`.png`, `.jpg`, `.css`, `.js`, etc.) from the project root — this is only the *dev* static path; in production nginx serves these instead (see Production deployment below)
 - `GET /api/ratings?s=<song_key>&uid=<user_id>` — returns `{up, down, user_vote}` for the current song
 - `POST /api/vote` — records a thumbs up/down; returns 409 if the user already voted for this song
-- SQLite (`ratings.db`): single `votes` table with `(song_key, user_id)` as the primary key — one vote per user per song, never changed once cast
+- Dual database backend, selected by the `DATABASE_URL` env var: unset → SQLite (`ratings.db`, for local dev/tests); `postgres://...`/`postgresql://...` → PostgreSQL, for production. Same `votes` table shape either way — `(song_key, user_id)` primary key, one vote per user per song, never changed once cast. `get_db()`/`PgConnection` in `app.py` adapt psycopg2's cursor-based API to look like sqlite3's connection-level `.execute()`, and translate `?` placeholders to `%s` for Postgres, so the query strings and route handlers are backend-agnostic.
+  - Known limitation carried into the Postgres path: `submit_vote` does a SELECT-then-INSERT without a DB-level upsert, so two concurrent requests for the same `(song_key, user_id)` under multiple gunicorn workers could both pass the "not existing" check and race on the `PRIMARY KEY` — the loser gets an unhandled `IntegrityError` (500) instead of a clean 409. Not fixed here; would need `INSERT ... ON CONFLICT DO NOTHING` (Postgres) / `INSERT OR IGNORE` (SQLite) plus a re-fetch.
 
 **Frontend** — no framework, no build tooling. Four files:
 - `index.html` — markup only; links `style.css`, `logic.js`, and `script.js` (loaded in that order)
@@ -37,9 +38,25 @@ Radio Calico is a single-page internet radio player. There is no build step — 
 - Metadata: `https://d3d4yli4hf5bmh.cloudfront.net/metadatav2.json`
 - Cover art: `https://d3d4yli4hf5bmh.cloudfront.net/cover.jpg`
 
+## Production deployment
+
+`docker-compose.yml` runs three services:
+- **postgres** — `postgres:16-alpine`, exposed on host port 5432 (for local testing/`test_app_postgres.py`), credentials `radiocalico`/`radiocalico`/db `radiocalico`.
+- **app** — built from `Dockerfile`, runs `gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app`. `wsgi.py` (not `app.py`) is the entrypoint for gunicorn because it explicitly calls `init_db()` on import — `app.py` deliberately does *not* call `init_db()` at module import time, only inside its `if __name__ == '__main__'` guard, so that `import app` (as the pytest suite does) never touches a real database as a side effect.
+- **nginx** — built from `nginx/Dockerfile`, exposed on host port 8080. Copies only the whitelisted static files (`index.html`, `style.css`, `script.js`, `logic.js`, `RadioCalicoLogoTM.png`) into the image — never the whole repo — and `nginx/default.conf` serves them by explicit extension whitelist (mirroring `app.py`'s `static_files` whitelist) while reverse-proxying `/api/*` to the `app` service on port 8000. Everything else 404s.
+
+```bash
+docker compose up --build
+# app: http://localhost:8080
+```
+
+To run the Postgres integration tests locally without the full stack: `docker compose up -d postgres`, then `python -m pytest tests/test_app_postgres.py` (it auto-skips if Postgres isn't reachable on `localhost:5432` or `psycopg2` isn't installed).
+
 ## Testing
 
-**Backend** (`tests/test_app.py`) — pytest against Flask's test client, with `app.DB` monkeypatched to a temp SQLite file per test (never touches real `ratings.db`). Covers the ratings/vote endpoints: validation, vote recording, multi-user accumulation, duplicate-vote 409 behavior, per-song isolation, CORS headers.
+**Backend**:
+- `tests/test_app.py` — pytest against Flask's test client, with `app.DB` monkeypatched to a temp SQLite file per test (never touches real `ratings.db`). Covers the ratings/vote endpoints: validation, vote recording, multi-user accumulation, duplicate-vote 409 behavior, per-song isolation, CORS headers.
+- `tests/test_app_postgres.py` — same behaviors, run against real PostgreSQL by monkeypatching `app.IS_POSTGRES`/`app.DATABASE_URL`. Self-skips via `pytest.importorskip('psycopg2')` and a connection probe if Postgres isn't reachable, so the default `pytest` run is unaffected when it isn't running. Uses a random `pg-test-<uuid>` song key per test and deletes it in teardown (no table truncation, since a shared docker-compose Postgres may be used across other work).
 ```bash
 pip install -r requirements-dev.txt
 python -m pytest

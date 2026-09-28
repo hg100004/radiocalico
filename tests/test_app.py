@@ -1,5 +1,6 @@
 import os
 import sys
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -88,3 +89,27 @@ def test_votes_are_isolated_per_song(client):
 def test_cors_headers_present(client):
     r = ratings(client, 'song-a', 'user-a')
     assert r.headers['Access-Control-Allow-Origin'] == '*'
+
+
+def test_concurrent_duplicate_votes_only_one_succeeds(client):
+    # Each thread needs its own test client -- Flask's test client keeps
+    # per-instance context-stack state that isn't safe to share across threads.
+    n = 8
+    results = []
+    barrier = threading.Barrier(n)
+
+    def cast():
+        barrier.wait()
+        with rc_app.app.test_client() as c:
+            results.append(vote(c, 'song-race', 'user-race', 'up').status_code)
+
+    threads = [threading.Thread(target=cast) for _ in range(n)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert sorted(results) == [200] + [409] * (n - 1)
+
+    r = ratings(client, 'song-race', 'user-race')
+    assert r.get_json() == {'up': 1, 'down': 0, 'user_vote': 'up'}
