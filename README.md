@@ -108,6 +108,22 @@ npm install
 npm test
 ```
 
+## Contributing
+
+`master` is protected — every change goes through a feature branch and pull request, gated on the CI workflow (`.github/workflows/ci.yml`) passing both its `backend` and `frontend` jobs (tests + security scans). This applies to everyone, including repo admins; there's no bypass.
+
+```bash
+git checkout -b my-change
+# commit your changes
+git push -u origin my-change
+gh pr create
+```
+
+Once CI is green, merge the PR (`gh pr merge` or the GitHub UI), then sync local `master`:
+```bash
+git checkout master && git pull origin master
+```
+
 ## Production Deployment
 
 ```bash

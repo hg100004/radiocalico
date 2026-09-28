@@ -13,6 +13,22 @@ A `Makefile` wraps the common commands: `make install`/`make dev` for the above,
 
 The Flask server is typically already running. Restart it in the background if a restart is needed; never start it in the foreground.
 
+## Git workflow
+
+`master` is a protected branch: GitHub rejects direct `git push origin master` for any commit that doesn't already have passing `backend` and `frontend` status checks (from `.github/workflows/ci.yml`) — this applies even to the repo owner/admin (`enforce_admins` is on, no bypass). All changes go through a feature branch + pull request:
+
+```bash
+git checkout -b my-change
+# commit changes
+git push -u origin my-change
+gh pr create --title "..." --body "..."
+```
+
+CI runs automatically on the PR; once both checks pass, merge via `gh pr merge` or the GitHub UI. After merging, sync local `master`:
+```bash
+git checkout master && git pull origin master
+```
+
 ## Architecture
 
 Radio Calico is a single-page internet radio player. There is no build step — the entire frontend lives in one `index.html` with all CSS and JS inline.
