@@ -2,6 +2,8 @@
 
 A single-page internet radio player built with Flask and vanilla JavaScript. Streams lossless HLS audio, displays live now-playing metadata and album art, and lets listeners rate tracks with a thumbs up/down.
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the system diagram.
+
 ![Radio Calico Logo](RadioCalicoLogoTM.png)
 
 ## Features
