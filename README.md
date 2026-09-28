@@ -56,6 +56,8 @@ make test-backend      # pytest against SQLite only
 make test-backend-pg   # Starts postgres via docker compose, runs tests/test_app_postgres.py against it
 make test-frontend     # Vitest only
 
+make security           # npm audit -- fails if known vulnerabilities are found in npm deps
+
 make clean             # Remove Python/pytest caches
 ```
 

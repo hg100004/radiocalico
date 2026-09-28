@@ -75,7 +75,12 @@ npm install
 npm test
 ```
 
-## Style Guide
+## Security Scanning
+
+`make security` runs `npm audit` against `package-lock.json` (fails with non-zero exit if any known vulnerability is found — there's no npm runtime dependency surface to scan since the frontend has zero npm runtime deps, only devDependencies for the Vitest toolchain). Currently reports 0 vulnerabilities (`vitest` is pinned to `^5.0.2`, upgraded from `^2.1.4` specifically to resolve 5 known vulnerabilities in the `vitest`/`vite`/`esbuild`/`@vitest/mocker` chain — all 24 frontend tests were re-verified passing after the upgrade, run 4x to check for flakiness).
+```bash
+npm audit
+```
 
 A text version of the styling guide for the webpage is at `/home/student/radiocalico/RadioCalico_Style_Guide.txt`
 

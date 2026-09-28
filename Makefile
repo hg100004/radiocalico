@@ -1,4 +1,4 @@
-.PHONY: help install install-dev dev prod prod-down prod-logs test test-backend test-backend-pg test-frontend clean
+.PHONY: help install install-dev dev prod prod-down prod-logs test test-backend test-backend-pg test-frontend security clean
 
 help:
 	@echo "Radio Calico"
@@ -17,6 +17,8 @@ help:
 	@echo "  make test-backend     Run pytest against SQLite only"
 	@echo "  make test-backend-pg  Start postgres via docker compose, run tests/test_app_postgres.py against it"
 	@echo "  make test-frontend    Run the Vitest suite"
+	@echo ""
+	@echo "  make security         Audit npm dependencies for known vulnerabilities (npm audit)"
 	@echo ""
 	@echo "  make clean            Remove Python/pytest caches"
 
@@ -50,6 +52,9 @@ test-backend-pg:
 
 test-frontend:
 	npm test
+
+security:
+	npm audit
 
 clean:
 	rm -rf __pycache__ tests/__pycache__ .pytest_cache
