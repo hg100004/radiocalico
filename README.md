@@ -56,7 +56,9 @@ make test-backend      # pytest against SQLite only
 make test-backend-pg   # Starts postgres via docker compose, runs tests/test_app_postgres.py against it
 make test-frontend     # Vitest only
 
-make security           # npm audit -- fails if known vulnerabilities are found in npm deps
+make security           # Python (pip-audit) + npm (npm audit) dependency vulnerability scans
+make security-backend   # pip-audit only
+make security-frontend  # npm audit only
 
 make clean             # Remove Python/pytest caches
 ```
@@ -77,6 +79,7 @@ radiocalico/
 ├── package.json           # Vitest + jsdom, for running the frontend test suite
 ├── Dockerfile              # App image — gunicorn serving wsgi:app
 ├── docker-compose.yml      # postgres + app (gunicorn) + nginx, for a production-like stack
+├── .env.example             # Template for POSTGRES_DB/USER/PASSWORD -- copy to .env (gitignored)
 ├── nginx/
 │   ├── Dockerfile           # Copies only the whitelisted static assets into the nginx image
 │   └── default.conf         # Serves static files, proxies /api/* to the app service
@@ -108,10 +111,11 @@ npm test
 ## Production Deployment
 
 ```bash
+cp .env.example .env   # set a real POSTGRES_PASSWORD before deploying anywhere shared
 docker compose up --build
 ```
 
-Runs PostgreSQL, the Flask app under gunicorn, and nginx together. The app is served at [http://localhost:8080](http://localhost:8080) — nginx serves the static frontend files directly and reverse-proxies `/api/*` to the app container.
+Runs PostgreSQL, the Flask app under gunicorn, and nginx together. The app is served at [http://localhost:8080](http://localhost:8080) — nginx serves the static frontend files directly and reverse-proxies `/api/*` to the app container. Postgres credentials come from `.env` (gitignored); without one, `docker-compose.yml` falls back to insecure `radiocalico`/`radiocalico`/`radiocalico` defaults meant for local dev only.
 
 ## API
 

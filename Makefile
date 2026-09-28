@@ -1,4 +1,4 @@
-.PHONY: help install install-dev dev prod prod-down prod-logs test test-backend test-backend-pg test-frontend security clean
+.PHONY: help install install-dev dev prod prod-down prod-logs test test-backend test-backend-pg test-frontend security security-backend security-frontend clean
 
 help:
 	@echo "Radio Calico"
@@ -18,7 +18,9 @@ help:
 	@echo "  make test-backend-pg  Start postgres via docker compose, run tests/test_app_postgres.py against it"
 	@echo "  make test-frontend    Run the Vitest suite"
 	@echo ""
-	@echo "  make security         Audit npm dependencies for known vulnerabilities (npm audit)"
+	@echo "  make security          Run all dependency vulnerability scans (Python + npm)"
+	@echo "  make security-backend  Audit Python dependencies for known vulnerabilities (pip-audit)"
+	@echo "  make security-frontend Audit npm dependencies for known vulnerabilities (npm audit)"
 	@echo ""
 	@echo "  make clean            Remove Python/pytest caches"
 
@@ -48,12 +50,17 @@ test-backend:
 
 test-backend-pg:
 	docker compose up -d postgres
-	TEST_DATABASE_URL=postgresql://radiocalico:radiocalico@localhost:5432/radiocalico python -m pytest tests/test_app_postgres.py -v
+	TEST_DATABASE_URL=postgresql://$${POSTGRES_USER:-radiocalico}:$${POSTGRES_PASSWORD:-radiocalico}@localhost:5432/$${POSTGRES_DB:-radiocalico} python -m pytest tests/test_app_postgres.py -v
 
 test-frontend:
 	npm test
 
-security:
+security: security-backend security-frontend
+
+security-backend:
+	pip-audit -r requirements.txt
+
+security-frontend:
 	npm audit
 
 clean:

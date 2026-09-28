@@ -42,8 +42,10 @@ Radio Calico is a single-page internet radio player. There is no build step — 
 
 ## Production deployment
 
+Postgres credentials come from `POSTGRES_DB`/`POSTGRES_USER`/`POSTGRES_PASSWORD` env vars (docker-compose auto-loads a `.env` file in the repo root if present), falling back to the insecure dev default `radiocalico`/`radiocalico`/`radiocalico` if unset. Copy `.env.example` to `.env` and set a real password before deploying anywhere shared — `.env` is gitignored, `.env.example` is the tracked template. `make test-backend-pg` reads the same env vars (with the same fallback) so it stays in sync with whatever `docker compose up -d postgres` is actually running.
+
 `docker-compose.yml` runs three services:
-- **postgres** — `postgres:16-alpine`, exposed on host port 5432 (for local testing/`test_app_postgres.py`), credentials `radiocalico`/`radiocalico`/db `radiocalico`.
+- **postgres** — `postgres:16-alpine`, exposed on host port 5432 (for local testing/`test_app_postgres.py`).
 - **app** — built from `Dockerfile`, runs `gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app`. `wsgi.py` (not `app.py`) is the entrypoint for gunicorn because it explicitly calls `init_db()` on import — `app.py` deliberately does *not* call `init_db()` at module import time, only inside its `if __name__ == '__main__'` guard, so that `import app` (as the pytest suite does) never touches a real database as a side effect.
 - **nginx** — built from `nginx/Dockerfile`, exposed on host port 8080. Copies only the whitelisted static files (`index.html`, `style.css`, `script.js`, `logic.js`, `RadioCalicoLogoTM.png`) into the image — never the whole repo — and `nginx/default.conf` serves them by explicit extension whitelist (mirroring `app.py`'s `static_files` whitelist) while reverse-proxying `/api/*` to the `app` service on port 8000. Everything else 404s.
 
@@ -77,8 +79,13 @@ npm test
 
 ## Security Scanning
 
-`make security` runs `npm audit` against `package-lock.json` (fails with non-zero exit if any known vulnerability is found — there's no npm runtime dependency surface to scan since the frontend has zero npm runtime deps, only devDependencies for the Vitest toolchain). Currently reports 0 vulnerabilities (`vitest` is pinned to `^5.0.2`, upgraded from `^2.1.4` specifically to resolve 5 known vulnerabilities in the `vitest`/`vite`/`esbuild`/`@vitest/mocker` chain — all 24 frontend tests were re-verified passing after the upgrade, run 4x to check for flakiness).
+`make security` runs both dependency vulnerability scanners (each fails with non-zero exit if a known vulnerability is found):
+- `make security-backend` — `pip-audit -r requirements.txt` (Flask, gunicorn, psycopg2-binary). Currently 0 vulnerabilities.
+- `make security-frontend` — `npm audit` against `package-lock.json`. There's no npm runtime dependency surface to scan since the frontend has zero npm runtime deps — this only covers the Vitest/jsdom devDependency toolchain. Currently 0 vulnerabilities (`vitest` is pinned to `^5.0.2`, upgraded from `^2.1.4` specifically to resolve 5 known vulnerabilities in the `vitest`/`vite`/`esbuild`/`@vitest/mocker` chain — all 24 frontend tests were re-verified passing after the upgrade, run 4x to check for flakiness).
+
+Neither tool scans application code, infrastructure config, or Docker base images — e.g. the insecure `radiocalico`/`radiocalico`/`radiocalico` *default* Postgres credentials in `docker-compose.yml` (now overridable via `.env`, see Production deployment above, but still the fallback if nothing overrides it) wouldn't be flagged by either.
 ```bash
+pip-audit -r requirements.txt
 npm audit
 ```
 
