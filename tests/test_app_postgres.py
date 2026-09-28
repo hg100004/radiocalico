@@ -46,6 +46,13 @@ def ratings(client, s, uid=''):
     return client.get(f'/api/ratings?s={s}&uid={uid}')
 
 
+def test_health_returns_ok_when_db_reachable(client):
+    c, _ = client
+    r = c.get('/health')
+    assert r.status_code == 200
+    assert r.get_json() == {'status': 'ok'}
+
+
 def test_ratings_defaults_to_zero_for_unknown_song(client):
     c, song_key = client
     r = ratings(c, song_key, 'user-a')

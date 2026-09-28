@@ -26,6 +26,19 @@ def ratings(client, s, uid=''):
     return client.get(f'/api/ratings?s={s}&uid={uid}')
 
 
+def test_health_returns_ok_when_db_reachable(client):
+    r = client.get('/health')
+    assert r.status_code == 200
+    assert r.get_json() == {'status': 'ok'}
+
+
+def test_health_returns_503_when_db_unreachable(client, monkeypatch):
+    monkeypatch.setattr(rc_app, 'DB', '/nonexistent-dir/ratings.db')
+    r = client.get('/health')
+    assert r.status_code == 503
+    assert r.get_json()['status'] == 'error'
+
+
 def test_ratings_missing_song_key_is_400(client):
     r = client.get('/api/ratings')
     assert r.status_code == 400

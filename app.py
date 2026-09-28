@@ -78,6 +78,15 @@ def static_files(filename):
         return '', 404
     return send_from_directory(DIR, filename)
 
+@app.route('/health')
+def health():
+    try:
+        with get_db() as c:
+            c.execute('SELECT 1')
+        return jsonify(status='ok'), 200
+    except Exception as e:
+        return jsonify(status='error', error=str(e)), 503
+
 @app.route('/api/ratings')
 def get_ratings():
     s   = request.args.get('s', '')
