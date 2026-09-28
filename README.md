@@ -121,6 +121,7 @@ Runs PostgreSQL, the Flask app under gunicorn, and nginx together. The app is se
 
 | Method | Endpoint | Description |
 |---|---|---|
+| `GET` | `/health` | Returns `{status: "ok"}` (200) if the database is reachable, `{status: "error", error}` (503) otherwise |
 | `GET` | `/api/ratings?s=<song_key>&uid=<user_id>` | Returns `{up, down, user_vote}` for a song |
 | `POST` | `/api/vote` | Cast a vote — body: `{s, uid, vote: "up"\|"down"}`. Returns 409 if already voted. |
 
